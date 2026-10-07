@@ -111,5 +111,13 @@ def list_supported_states() -> str:
     )
 
 
+
+
+@mcp.prompt()
+def weather_prompt(city: str) -> str:
+    """Prompt template for weather check."""
+    return f"What's the weather in {city}?"
+
 if __name__ == "__main__":
     mcp.run(transport="stdio")
+
