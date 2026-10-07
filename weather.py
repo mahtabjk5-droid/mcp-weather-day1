@@ -1,4 +1,4 @@
-from typing import Any
+﻿from typing import Any
 import httpx2
 from mcp.server import MCPServer
 
@@ -82,6 +82,33 @@ Forecast: {period["detailedForecast"]}
         forecasts.append(forecast)
 
     return "\n---\n".join(forecasts)
+
+
+@mcp.tool()
+async def get_current_weather(state: str) -> str:
+    """Get current weather summary for a US state.
+
+    Args:
+        state: Two-letter US state code (e.g. CA, NY)
+    """
+    url = f"{NWS_API_BASE}/alerts/active/area/{state}"
+    data = await make_nws_request(url)
+
+    if not data:
+        return f"No current weather data for {state}."
+
+    alert_count = len(data.get("features", []))
+    return f"State: {state}\nActive alerts: {alert_count}\nSource: NWS API"
+
+
+@mcp.resource("weather://states")
+def list_supported_states() -> str:
+    """List of supported US states for weather queries."""
+    return (
+        "Supported US States:\n"
+        "CA, NY, TX, FL, WA, IL, PA, OH, GA, NC, "
+        "MI, NJ, VA, AZ, MA, TN, IN, MO, MD, WI"
+    )
 
 
 if __name__ == "__main__":
