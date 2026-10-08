@@ -21,22 +21,22 @@ async def make_nws_request(url: str) -> dict[str, Any] | None:
 
 def format_alert(feature: dict) -> str:
     props = feature["properties"]
-    return f"""
+    return f'''
 Event: {props.get("event", "Unknown")}
 Area: {props.get("areaDesc", "Unknown")}
 Severity: {props.get("severity", "Unknown")}
 Description: {props.get("description", "No description available")}
 Instructions: {props.get("instruction", "No specific instructions provided")}
-"""
+'''
 
 
 @mcp.tool()
 async def get_alerts(state: str) -> str:
-    """Get weather alerts for a US state.
+    '''Get weather alerts for a US state.
 
     Args:
         state: Two-letter US state code (e.g. CA, NY)
-    """
+    '''
     url = f"{NWS_API_BASE}/alerts/active/area/{state}"
     data = await make_nws_request(url)
 
@@ -52,12 +52,12 @@ async def get_alerts(state: str) -> str:
 
 @mcp.tool()
 async def get_forecast(latitude: float, longitude: float) -> str:
-    """Get weather forecast for a location.
+    '''Get weather forecast for a location (next 5 periods).
 
     Args:
         latitude: Latitude of the location
         longitude: Longitude of the location
-    """
+    '''
     points_url = f"{NWS_API_BASE}/points/{latitude},{longitude}"
     points_data = await make_nws_request(points_url)
 
@@ -73,12 +73,12 @@ async def get_forecast(latitude: float, longitude: float) -> str:
     periods = forecast_data["properties"]["periods"]
     forecasts = []
     for period in periods[:5]:
-        forecast = f"""
-{period["name"]}:
-Temperature: {period["temperature"]}°{period["temperatureUnit"]}
-Wind: {period["windSpeed"]} {period["windDirection"]}
-Forecast: {period["detailedForecast"]}
-"""
+        forecast = (
+            f"\n{period['name']}:\n"
+            f"Temperature: {period['temperature']} {period['temperatureUnit']}\n"
+            f"Wind: {period['windSpeed']} {period['windDirection']}\n"
+            f"Forecast: {period['detailedForecast']}\n"
+        )
         forecasts.append(forecast)
 
     return "\n---\n".join(forecasts)
@@ -86,11 +86,11 @@ Forecast: {period["detailedForecast"]}
 
 @mcp.tool()
 async def get_current_weather(state: str) -> str:
-    """Get current weather summary for a US state.
+    '''Get current weather summary for a US state.
 
     Args:
         state: Two-letter US state code (e.g. CA, NY)
-    """
+    '''
     url = f"{NWS_API_BASE}/alerts/active/area/{state}"
     data = await make_nws_request(url)
 
@@ -101,33 +101,14 @@ async def get_current_weather(state: str) -> str:
     return f"State: {state}\nActive alerts: {alert_count}\nSource: NWS API"
 
 
-@mcp.resource("weather://states")
-def list_supported_states() -> str:
-    """List of supported US states for weather queries."""
-    return (
-        "Supported US States:\n"
-        "CA, NY, TX, FL, WA, IL, PA, OH, GA, NC, "
-        "MI, NJ, VA, AZ, MA, TN, IN, MO, MD, WI"
-    )
-
-
-
-
-@mcp.prompt()
-def weather_prompt(city: str) -> str:
-    """Prompt template for weather check."""
-    return f"What's the weather in {city}?"
-
-
-
 @mcp.tool()
 async def get_forecast_extended(latitude: float, longitude: float) -> str:
-    """Get extended 7-day weather forecast for a location.
+    '''Get extended 7-day weather forecast for a location.
 
     Args:
         latitude: Latitude of the location
         longitude: Longitude of the location
-    """
+    '''
     points_url = f"{NWS_API_BASE}/points/{latitude},{longitude}"
     points_data = await make_nws_request(points_url)
 
@@ -142,21 +123,31 @@ async def get_forecast_extended(latitude: float, longitude: float) -> str:
 
     periods = forecast_data["properties"]["periods"]
     forecasts = []
-    for period in periods[:14]:  # 7 days = ~14 periods
-        forecast = f"""
-{period["name"]}:
-Temperature: {period["temperature"]}°{period["temperatureUnit"]}
-Wind: {period["windSpeed"]} {period["windDirection"]}
-Forecast: {period["detailedForecast"]}
-"""
+    for period in periods[:14]:
+        forecast = (
+            f"\n{period['name']}:\n"
+            f"Temperature: {period['temperature']} {period['temperatureUnit']}\n"
+            f"Wind: {period['windSpeed']} {period['windDirection']}\n"
+            f"Forecast: {period['detailedForecast']}\n"
+        )
         forecasts.append(forecast)
 
     return "\n---\n".join(forecasts)
 
 
+@mcp.resource("weather://states")
+def list_supported_states() -> str:
+    '''List of supported US states for weather queries.'''
+    return (
+        "Supported US States:\n"
+        "CA, NY, TX, FL, WA, IL, PA, OH, GA, NC, "
+        "MI, NJ, VA, AZ, MA, TN, IN, MO, MD, WI"
+    )
+
+
 @mcp.resource("weather://api-info")
 def api_info() -> str:
-    """Information about the NWS Weather API."""
+    '''Information about the NWS Weather API.'''
     return (
         "NWS Weather API Info:\n"
         "- Base URL: https://api.weather.gov\n"
@@ -166,7 +157,12 @@ def api_info() -> str:
         "- Prompts: weather_prompt\n"
     )
 
+
+@mcp.prompt()
+def weather_prompt(city: str) -> str:
+    '''Prompt template for weather check.'''
+    return f"What is the weather in {city}?"
+
+
 if __name__ == "__main__":
     mcp.run(transport="stdio")
-
-
