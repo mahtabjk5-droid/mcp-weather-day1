@@ -118,6 +118,55 @@ def weather_prompt(city: str) -> str:
     """Prompt template for weather check."""
     return f"What's the weather in {city}?"
 
+
+
+@mcp.tool()
+async def get_forecast_extended(latitude: float, longitude: float) -> str:
+    """Get extended 7-day weather forecast for a location.
+
+    Args:
+        latitude: Latitude of the location
+        longitude: Longitude of the location
+    """
+    points_url = f"{NWS_API_BASE}/points/{latitude},{longitude}"
+    points_data = await make_nws_request(points_url)
+
+    if not points_data:
+        return "Unable to fetch forecast data for this location."
+
+    forecast_url = points_data["properties"]["forecast"]
+    forecast_data = await make_nws_request(forecast_url)
+
+    if not forecast_data:
+        return "Unable to fetch detailed forecast."
+
+    periods = forecast_data["properties"]["periods"]
+    forecasts = []
+    for period in periods[:14]:  # 7 days = ~14 periods
+        forecast = f"""
+{period["name"]}:
+Temperature: {period["temperature"]}°{period["temperatureUnit"]}
+Wind: {period["windSpeed"]} {period["windDirection"]}
+Forecast: {period["detailedForecast"]}
+"""
+        forecasts.append(forecast)
+
+    return "\n---\n".join(forecasts)
+
+
+@mcp.resource("weather://api-info")
+def api_info() -> str:
+    """Information about the NWS Weather API."""
+    return (
+        "NWS Weather API Info:\n"
+        "- Base URL: https://api.weather.gov\n"
+        "- Coverage: US only\n"
+        "- Tools: get_alerts, get_forecast, get_current_weather, get_forecast_extended\n"
+        "- Resources: weather://states, weather://api-info\n"
+        "- Prompts: weather_prompt\n"
+    )
+
 if __name__ == "__main__":
     mcp.run(transport="stdio")
+
 
